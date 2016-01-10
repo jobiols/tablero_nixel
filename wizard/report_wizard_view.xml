@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+
+        <record id="view_tablero_nixel" model="ir.ui.view">
+            <field name="name">Reporte financiero</field>
+            <field name="model">tablero_nixel.wiz_report_nixel</field>
+            <field name="arch" type="xml">
+                <form string="Reporte financiero" version="7.0">
+                    <group>
+                        <label string="Se va a generar el reporte financiero, ingresá las fechas del período"/>
+                    </group>
+                    <group>
+                        <field name="desde_date" string="Desde"/>
+                        <field name="hasta_date" string="Hasta"/>
+                    </group>
+                    <footer>
+                        <button name="button_generate_report" string="Confirmar"
+                                type="object"
+                                class="oe_highlight"/>
+                        or
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="wizard_tablero_nixel" model="ir.actions.act_window">
+            <field name="name">Reporte financiero</field>
+            <field name="res_model">tablero_nixel.wiz_report_nixel</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <menuitem parent="base.menu_reporting" id="menu_reporting_nixel"
+                  sequence="30" name="Reportes Nixel"/>
+
+        <menuitem parent="menu_reporting_nixel" action="wizard_tablero_nixel"
+                  id="menu_reporting_nixel_item" sequence="1"/>
+
+        <report
+                id="nixel_report_id"
+                model="tablero_nixel.wiz_report_nixel"
+                string="Reporte nixel"
+                report_type="qweb-html"
+                attachment_use="False"
+                file="tablero_nixel.nixel_report"
+                name="tablero_nixel.nixel_report"
+                />
+
+    </data>
+</openerp>
