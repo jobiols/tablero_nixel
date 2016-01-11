@@ -36,7 +36,7 @@ class nixel_report_def(report_sxw.rml_parse):
             'get_gastos': self._get_gastos,
         })
 
-    def _get_default_accounts(self):
+    def _default_accounts(self):
         # buscar los parners
         pool = self.pool['res.partner']
         ids = pool.search(self.cr, self.uid, [])
@@ -51,7 +51,7 @@ class nixel_report_def(report_sxw.rml_parse):
                 'expenses': 155
                 }
 
-    def _get_period(self):
+    def _period(self):
         # get from, to dates from wizard
         wiz = self.pool['tablero_nixel.wiz_report_nixel']
         ids = wiz.search(self.cr, self.uid, [])
@@ -60,10 +60,11 @@ class nixel_report_def(report_sxw.rml_parse):
             date_to = data.hasta_date
         return date_from, date_to
 
-    def _get_compute_journals_refactor(self, date_from, date_to, journal_type):
+    def _compute_journals_refactor(self, date_from, date_to, journal_type):
         # find journals of type journal_type
         journal_pool = self.pool['account.journal']
-        journal_ids = journal_pool.search(self.cr, self.uid, [('type', '=', journal_type)])
+        journal_ids = journal_pool.search(self.cr, self.uid,
+                                          [('type', '=', journal_type)])
         for journal in journal_pool.browse(self.cr, self.uid, journal_ids):
             # find move lines of this journal, between dates
             pool = self.pool['account.move.line']
@@ -75,13 +76,25 @@ class nixel_report_def(report_sxw.rml_parse):
             # summarize
             debit = credit = 0.0
             for account in pool.browse(self.cr, self.uid, ids):
-                print account.name, 'debit', account.debit, 'credit', account.credit
                 debit += account.debit
                 credit += account.credit
 
             return debit, credit
 
-    def _get_compute_balance(self, cr, uid, account_id):
+    def _compute_vouchers(self, date_from, date_to, voucher_type):
+        # find vouchers type voucher type
+        voucher_pool = self.pool['account.voucher']
+        voucher_ids = voucher_pool.search(self.cr, self.uid,
+                                          [('type', '=', voucher_type)])
+        amount = 0.0
+        for voucher in voucher_pool.browse(self.cr, self.uid, voucher_ids):
+            # summarize
+            print '--------------------', voucher.name, 'amount', voucher.amount
+            amount += voucher.amount
+
+        return amount
+
+    def _compute_balance(self, cr, uid, account_id):
         """
         Obtiene una lista de los registros en una cuenta conciliable, indicando nombre
         del partner y monto adeudado
@@ -124,11 +137,24 @@ class nixel_report_def(report_sxw.rml_parse):
             credit += account.credit
         return {'debit': debit, 'credit': credit}
 
+    def _compute_pos(self):
+        date_from, date_to = self._period()
+        pos = self.pool['pos.order.line']
+        ids = pos.search(self.cr, self.uid, [
+            ('create_date', '>=', date_from),
+            ('create_date', '<=', date_to)
+        ])
+        amount = 0.0
+        for pos in pos.browse(self.cr, self.uid, ids):
+            amount += pos.price_subtotal_incl
+
+        return amount
+
     def _get_debtors(self):
         debtors = []
         total = 0.0
-        clientes = self._get_default_accounts()['property_account_receivable']
-        elements = self._get_compute_balance(self.cr, self.uid, clientes)
+        clientes = self._default_accounts()['property_account_receivable']
+        elements = self._compute_balance(self.cr, self.uid, clientes)
         for element in elements:
             if element[0] <> 0:
                 debtors.append({'amount': element[0], 'name': element[1]})
@@ -138,8 +164,8 @@ class nixel_report_def(report_sxw.rml_parse):
     def _get_creditors(self):
         creditors = []
         total = 0.0
-        proveedores = self._get_default_accounts()['property_account_payable']
-        elements = self._get_compute_balance(self.cr, self.uid, proveedores)
+        proveedores = self._default_accounts()['property_account_payable']
+        elements = self._compute_balance(self.cr, self.uid, proveedores)
         for element in elements:
             if element[0] <> 0:
                 creditors.append({'amount': element[0], 'name': element[1]})
@@ -147,38 +173,42 @@ class nixel_report_def(report_sxw.rml_parse):
         return {'creditors': creditors, 'total': total}
 
     def _get_venta(self):
-        date_from, date_to = self._get_period()
+        date_from, date_to = self._period()
         # compute all sales
-        sale, dummy = self._get_compute_journals_refactor(date_from,date_to,'sale')
+        sale, dummy = self._compute_journals_refactor(date_from, date_to, 'sale')
         # compute all sales refund
-        refund, dummy = self._get_compute_journals_refactor(date_from,date_to,'sale_refund')
-        invoiced = sale-refund
+        refund, dummy = self._compute_journals_refactor(date_from, date_to, 'sale_refund')
+        invoiced = sale - refund
 
-        pending = self._get_debtors()['total']
+        amount = self._compute_vouchers(date_from, date_to, 'receipt')
+        amount += self._compute_pos()
+
         return {'fac': invoiced,
-                'cob': 0,
-                'pen': pending}
+                'cob': amount,
+                'pen': invoiced - amount}
 
     def _get_compra(self):
-        date_from, date_to = self._get_period()
+        date_from, date_to = self._period()
         # compute all purchases
-        purchase, dummy = self._get_compute_journals_refactor(date_from,date_to,'purchase')
+        purchase, dummy = self._compute_journals_refactor(date_from, date_to, 'purchase')
         # compute all purchase refunds
-        refund, dummy = self._get_compute_journals_refactor(date_from,date_to,'purchase_refund')
-        invoiced = purchase-refund
+        refund, dummy = self._compute_journals_refactor(date_from, date_to,
+                                                        'purchase_refund')
+        invoiced = purchase - refund
 
+        amount = self._compute_vouchers(date_from, date_to, 'payment')
 
-        pending = self._get_creditors()['total']
         return {'fac': invoiced,
-                'cob': 0,
-                'pen': pending}
+                'cob': amount,
+                'pen': invoiced - amount}
 
     def _get_gastos(self):
-        date_from, date_to = self._get_period()
-        gastos = self._get_default_accounts()['expenses']
+        date_from, date_to = self._period()
+        gastos = self._default_accounts()['expenses']
         dic = self._summarize_account(self.cr, self.uid, gastos,
                                       date_from, date_to)
         return {'gas': dic['debit']}
+
 
 class report_nixel_class(osv.AbstractModel):
     _name = 'report.tablero_nixel.nixel_report'
