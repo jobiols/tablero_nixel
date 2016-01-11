@@ -123,12 +123,11 @@
 				<table class="table table-condensed">
 					<tr>
 						<td>
-							Gastos
+							Gastos varios administración
 						</td>
 						<td style="align right">
 							<span t-esc="get_gastos()['gas']"
 							  t-field-options='{"widget": "monetary", "display_currency": "res_company.currency_id"}'/>
-
 						</td>
 					</tr>
 				</table>
@@ -137,7 +136,7 @@
 	</tbody>
 </table>
 
-							<hr/>
+
 							<h3 style="text-align: center;">Mis cobros pendientes</h3>
 
 							<table class="table table-condensed">

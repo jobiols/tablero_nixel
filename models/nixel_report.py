@@ -49,7 +49,6 @@ class nixel_report_def(report_sxw.rml_parse):
             # obtengo las cuentas
             rec_account = pp.property_account_receivable.id
             pay_account = pp.property_account_payable.id
-            print 'deud', rec_account, '        pay', pay_account
         return {'property_account_receivable': rec_account,
                 'property_account_payable': pay_account,
                 'expenses': 155
