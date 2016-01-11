@@ -1,8 +1,9 @@
 Tablero de mando Nixel
 ----------------------
   
-  Genera un reporte con indicadores de gestión
-  
+  Genera un reporte con indicadores de gestión, está 
+  personalizado para la empresa Nixel.
+    
   Nota:
   Para que el reporte tome los estilos poner en parametros:  
   
