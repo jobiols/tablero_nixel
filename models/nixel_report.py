@@ -23,9 +23,6 @@ import time
 from openerp.osv import osv
 from openerp.report import report_sxw
 
-_PROVEEDORES = 79
-_DEUDORES_POR_VENTAS = 8
-_GASTOS = 155
 
 class nixel_report_def(report_sxw.rml_parse):
     def __init__(self, cr, uid, name, context=None):
@@ -63,6 +60,27 @@ class nixel_report_def(report_sxw.rml_parse):
             date_to = data.hasta_date
         return date_from, date_to
 
+    def _get_compute_journals_refactor(self, date_from, date_to, journal_type):
+        # find journals of type journal_type
+        journal_pool = self.pool['account.journal']
+        journal_ids = journal_pool.search(self.cr, self.uid, [('type', '=', journal_type)])
+        for journal in journal_pool.browse(self.cr, self.uid, journal_ids):
+            # find move lines of this journal, between dates
+            pool = self.pool['account.move.line']
+            ids = pool.search(self.cr, self.uid, [
+                ('journal_id', '=', journal.id),
+                ('date', '>=', date_from),
+                ('date', '<=', date_to),
+            ])
+            # summarize
+            debit = credit = 0.0
+            for account in pool.browse(self.cr, self.uid, ids):
+                print account.name, 'debit', account.debit, 'credit', account.credit
+                debit += account.debit
+                credit += account.credit
+
+            return debit, credit
+
     def _get_compute_balance(self, cr, uid, account_id):
         """
         Obtiene una lista de los registros en una cuenta conciliable, indicando nombre
@@ -92,7 +110,7 @@ class nixel_report_def(report_sxw.rml_parse):
 
     def _summarize_account(self, cr, uid, account_id, date_from, date_to):
         """
-        Sumariza la cuenta account_id en elementos del elementos del diario sobre un
+        Sumariza la cuenta account_id en elementos del diario sobre un
         período dando el total de créditos y débitos en un diccionario.
         """
         accounts = self.pool['account.move.line']
@@ -130,19 +148,30 @@ class nixel_report_def(report_sxw.rml_parse):
 
     def _get_venta(self):
         date_from, date_to = self._get_period()
-        clientes = self._get_default_accounts()['property_account_receivable']
-        dic = self._summarize_account(self.cr, self.uid, clientes,
-                                      date_from, date_to)
-        return {'fac': dic['debit'], 'cob': dic['credit'],
-                'pen': dic['debit'] - dic['credit']}
+        # compute all sales
+        sale, dummy = self._get_compute_journals_refactor(date_from,date_to,'sale')
+        # compute all sales refund
+        refund, dummy = self._get_compute_journals_refactor(date_from,date_to,'sale_refund')
+        invoiced = sale-refund
+
+        pending = self._get_debtors()['total']
+        return {'fac': invoiced,
+                'cob': 0,
+                'pen': pending}
 
     def _get_compra(self):
         date_from, date_to = self._get_period()
-        proveedores = self._get_default_accounts()['property_account_payable']
-        dic = self._summarize_account(self.cr, self.uid, proveedores,
-                                      date_from, date_to)
-        return {'fac': dic['credit'], 'cob': dic['debit'],
-                'pen': dic['credit'] - dic['debit']}
+        # compute all purchases
+        purchase, dummy = self._get_compute_journals_refactor(date_from,date_to,'purchase')
+        # compute all purchase refunds
+        refund, dummy = self._get_compute_journals_refactor(date_from,date_to,'purchase_refund')
+        invoiced = purchase-refund
+
+
+        pending = self._get_creditors()['total']
+        return {'fac': invoiced,
+                'cob': 0,
+                'pen': pending}
 
     def _get_gastos(self):
         date_from, date_to = self._get_period()
@@ -150,7 +179,6 @@ class nixel_report_def(report_sxw.rml_parse):
         dic = self._summarize_account(self.cr, self.uid, gastos,
                                       date_from, date_to)
         return {'gas': dic['debit']}
-
 
 class report_nixel_class(osv.AbstractModel):
     _name = 'report.tablero_nixel.nixel_report'
