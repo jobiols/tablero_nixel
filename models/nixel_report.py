@@ -60,7 +60,10 @@ class nixel_report_def(report_sxw.rml_parse):
             date_to = data.hasta_date
         return date_from, date_to
 
-    def _compute_journals_refactor(self, date_from, date_to, journal_type):
+    def _compute_invoices(self, date_from, date_to, journal_type):
+        """
+        Compute all invoices from sales and purchases
+        """
         # find journals of type journal_type
         journal_pool = self.pool['account.journal']
         journal_ids = journal_pool.search(self.cr, self.uid,
@@ -89,7 +92,6 @@ class nixel_report_def(report_sxw.rml_parse):
         amount = 0.0
         for voucher in voucher_pool.browse(self.cr, self.uid, voucher_ids):
             # summarize
-            print '--------------------', voucher.name, 'amount', voucher.amount
             amount += voucher.amount
 
         return amount
@@ -138,6 +140,9 @@ class nixel_report_def(report_sxw.rml_parse):
         return {'debit': debit, 'credit': credit}
 
     def _compute_pos(self):
+        """
+        Computa todos los cobros del pos entre dos fechas
+        """
         date_from, date_to = self._period()
         pos = self.pool['pos.order.line']
         ids = pos.search(self.cr, self.uid, [
@@ -151,6 +156,9 @@ class nixel_report_def(report_sxw.rml_parse):
         return amount
 
     def _get_debtors(self):
+        """
+        Obtiene todoss los partners que deben y sus deudas, no tiene fecha
+        """
         debtors = []
         total = 0.0
         clientes = self._default_accounts()['property_account_receivable']
@@ -162,6 +170,9 @@ class nixel_report_def(report_sxw.rml_parse):
         return {'debtors': debtors, 'total': total}
 
     def _get_creditors(self):
+        """
+        Obtiene todos los partners a los que se le debe deben y las deudas no tiene fecha
+        """
         creditors = []
         total = 0.0
         proveedores = self._default_accounts()['property_account_payable']
@@ -175,9 +186,9 @@ class nixel_report_def(report_sxw.rml_parse):
     def _get_venta(self):
         date_from, date_to = self._period()
         # compute all sales
-        sale, dummy = self._compute_journals_refactor(date_from, date_to, 'sale')
+        sale, dummy = self._compute_invoices(date_from, date_to, 'sale')
         # compute all sales refund
-        refund, dummy = self._compute_journals_refactor(date_from, date_to, 'sale_refund')
+        refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
         invoiced = sale - refund
 
         amount = self._compute_vouchers(date_from, date_to, 'receipt')
@@ -190,9 +201,9 @@ class nixel_report_def(report_sxw.rml_parse):
     def _get_compra(self):
         date_from, date_to = self._period()
         # compute all purchases
-        purchase, dummy = self._compute_journals_refactor(date_from, date_to, 'purchase')
+        purchase, dummy = self._compute_invoices(date_from, date_to, 'purchase')
         # compute all purchase refunds
-        refund, dummy = self._compute_journals_refactor(date_from, date_to,
+        refund, dummy = self._compute_invoices(date_from, date_to,
                                                         'purchase_refund')
         invoiced = purchase - refund
 
