@@ -46,9 +46,7 @@
 							Facturado
 						</td>
 							<td style="align right">
-							<span t-esc="get_venta()['fac']"
-							 t-field-options='{"widget": "monetary"
-							 "display_currency": "res_company.company_id.currency_id"}'/>
+							<span t-esc="formatLang(get_venta()['fac'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 					<tr>
@@ -56,9 +54,7 @@
 							Cobrado
 						</td>
 						<td style="align right">
-							<span t-esc="get_venta()['cob']"
-							 t-field-options='{"widget": "monetary",
-							 "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_venta()['cob'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 					<tr>
@@ -66,9 +62,7 @@
 							Pendiente
 						</td>
 						<td style="align right">
-							<span t-esc="get_venta()['pen']"
-							 t-field-options='{"widget": "monetary",
-							 "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_venta()['pen'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 				</table>
@@ -80,9 +74,7 @@
 							Facturado
 						</td>
 						<td style="align right">
-							<span t-esc="get_compra()['fac']"
-							 t-field-options='{"widget": "monetary",
-							 "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_compra()['fac'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 					<tr>
@@ -90,9 +82,7 @@
 							Cobrado
 						</td>
 						<td style="align right">
-							<span t-esc="get_compra()['cob']"
-							 t-field-options='{"widget": "monetary",
-							 "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_compra()['cob'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 					<tr>
@@ -100,9 +90,7 @@
 							Pendiente
 						</td>
 						<td style="align right">
-							<span t-esc="get_compra()['pen']"
-							 t-field-options='{"widget": "monetary",
-							 "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_compra()['pen'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 				</table>
@@ -126,8 +114,7 @@
 							Gastos varios administración
 						</td>
 						<td style="align right">
-							<span t-esc="get_gastos()['gas']"
-							  t-field-options='{"widget": "monetary", "display_currency": "res_company.currency_id"}'/>
+							<span t-esc="formatLang(get_gastos()['gas'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 				</table>
@@ -136,7 +123,7 @@
 	</tbody>
 </table>
 
-
+<!--  t-debug="pdb" en pdb hacer pp qwebcontext-->
 							<h3 style="text-align: center;">Mis cobros pendientes</h3>
 
 							<table class="table table-condensed">
@@ -153,8 +140,7 @@
 											<span t-esc="debtor['name']"/>
 										</td>
 										<td class="text-right">
-											<span t-esc="debtor['amount']"
-												  t-field-options='{"widget": "monetary", "display_currency": "res_company.currency_id"}'/>
+											<span t-esc="formatLang(debtor['amount'], currency_obj=res_company.currency_id)" />
 										</td>
 									</tr>
 								</t>
@@ -168,8 +154,7 @@
 												<strong>Total</strong>
 											</td>
 											<td class="text-right">
-												<span t-esc="get_debtors()['total']"
-													  t-field-options='{"widget": "monetary", "display_currency": "res_company.currency_id"}'/>
+												<span t-esc="formatLang(get_debtors()['total'], currency_obj=res_company.currency_id)" />
 											</td>
 										</tr>
 									</table>
@@ -193,8 +178,7 @@
 												<span t-esc="creditor['name']"/>
 											</td>
 											<td class="text-right">
-												<span t-esc="creditor['amount']"
-													  t-field-options='{"widget": "monetary", "display_currency": "res_company.currency_id"}'/>
+												<span t-esc="formatLang(creditor['amount'], currency_obj=res_company.currency_id)" />
 											</td>
 										</tr>
 								</t>
@@ -208,8 +192,7 @@
 												<strong>Total</strong>
 											</td>
 											<td class="text-right">
-												<span t-esc="get_creditors()['total']"
-													  t-field-options='{"widget": "monetary"}'/>
+												<span t-esc="formatLang(get_creditors()['total'], currency_obj=res_company.currency_id)" />
 											</td>
 										</tr>
 									</table>

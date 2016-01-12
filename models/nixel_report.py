@@ -87,8 +87,11 @@ class nixel_report_def(report_sxw.rml_parse):
     def _compute_vouchers(self, date_from, date_to, voucher_type):
         # find vouchers type voucher type
         voucher_pool = self.pool['account.voucher']
-        voucher_ids = voucher_pool.search(self.cr, self.uid,
-                                          [('type', '=', voucher_type)])
+        voucher_ids = voucher_pool.search(self.cr, self.uid, [
+            ('type', '=', voucher_type),
+            ('date', '>=', date_from),
+            ('date', '<=', date_to)
+        ])
         amount = 0.0
         for voucher in voucher_pool.browse(self.cr, self.uid, voucher_ids):
             # summarize
@@ -129,10 +132,11 @@ class nixel_report_def(report_sxw.rml_parse):
         período dando el total de créditos y débitos en un diccionario.
         """
         accounts = self.pool['account.move.line']
-        ids = accounts.search(cr, uid, [('account_id', '=', account_id),
-                                        ('date', '>=', date_from),
-                                        ('date', '<=', date_to),
-                                        ])
+        ids = accounts.search(cr, uid, [
+            ('account_id', '=', account_id),
+            ('date', '>=', date_from),
+            ('date', '<=', date_to),
+        ])
         debit = credit = 0.0
         for account in accounts.browse(cr, uid, ids):
             debit += account.debit
@@ -144,15 +148,14 @@ class nixel_report_def(report_sxw.rml_parse):
         Computa todos los cobros del pos entre dos fechas
         """
         date_from, date_to = self._period()
-        pos = self.pool['pos.order.line']
+        pos = self.pool['pos.order']
         ids = pos.search(self.cr, self.uid, [
-            ('create_date', '>=', date_from),
-            ('create_date', '<=', date_to)
+            ('date_order', '>=', date_from),
+            ('date_order', '<=', date_to),
         ])
         amount = 0.0
         for pos in pos.browse(self.cr, self.uid, ids):
-            amount += pos.price_subtotal_incl
-
+            amount += pos.amount_total
         return amount
 
     def _get_debtors(self):
@@ -191,7 +194,9 @@ class nixel_report_def(report_sxw.rml_parse):
         refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
         invoiced = sale - refund
 
+        # cobros de facturas
         amount = self._compute_vouchers(date_from, date_to, 'receipt')
+        # cobros de tickets
         amount += self._compute_pos()
 
         return {'fac': invoiced,
@@ -203,8 +208,7 @@ class nixel_report_def(report_sxw.rml_parse):
         # compute all purchases
         purchase, dummy = self._compute_invoices(date_from, date_to, 'purchase')
         # compute all purchase refunds
-        refund, dummy = self._compute_invoices(date_from, date_to,
-                                                        'purchase_refund')
+        refund, dummy = self._compute_invoices(date_from, date_to, 'purchase_refund')
         invoiced = purchase - refund
 
         amount = self._compute_vouchers(date_from, date_to, 'payment')
