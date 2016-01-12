@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--  t-debug="pdb" en pdb hacer pp qwebcontext-->
 <!--Custom report.-->
 <openerp>
 	<data>
@@ -123,7 +124,6 @@
 	</tbody>
 </table>
 
-<!--  t-debug="pdb" en pdb hacer pp qwebcontext-->
 							<h3 style="text-align: center;">Mis cobros pendientes</h3>
 
 							<table class="table table-condensed">

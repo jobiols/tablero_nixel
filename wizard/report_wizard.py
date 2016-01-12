@@ -24,26 +24,10 @@ import time
 
 class report_wizard(orm.TransientModel):
 
-    def _get_currency(self, cr, uid, ids, fieldnames, args, context=None):
-        result = {}
-        print '-------------------', result
-        for rec in self.browse(cr, uid, ids, context=context):
-            print rec
-
-            users = self.pool.get('res.users')
-            current_user = users.browse(cr, uid, uid, context=context)
-            print current_user
-            print current_user.company_id
-            print current_user.company_id.currency_id
-            result[rec.id] = current_user.company_id.currency_id
-            print result
-        return result
-
     _name = 'tablero_nixel.wiz_report_nixel'
     _columns = {
         'desde_date': fields.date('Desde', default=lambda self: self._get_default_date()),
         'hasta_date': fields.date('Hasta', default=lambda self: self._get_default_date()),
-        'currency_id' : fields.function(_get_currency, type="many2one", string="Currency", relation="res.currency"),
     }
 
     def _get_default_date(self):
