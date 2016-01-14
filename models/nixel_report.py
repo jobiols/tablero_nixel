@@ -82,7 +82,7 @@ class nixel_report_def(report_sxw.rml_parse):
                 debit += account.debit
                 credit += account.credit
 
-            return debit, credit
+        return debit, credit
 
     def _compute_vouchers(self, date_from, date_to, voucher_type):
         # find vouchers type voucher type
@@ -194,10 +194,13 @@ class nixel_report_def(report_sxw.rml_parse):
         refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
         invoiced = sale - refund
 
+        amount_pos = self._compute_pos()
+        invoiced += amount_pos
+
         # cobros de facturas
         amount = self._compute_vouchers(date_from, date_to, 'receipt')
         # cobros de tickets
-        amount += self._compute_pos()
+        amount += amount_pos
 
         return {'fac': invoiced,
                 'cob': amount,
