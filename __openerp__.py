@@ -24,7 +24,7 @@
     "version": "1.0",
     "author": "jeo Software",
     'website': 'http://www.jeo-soft.com.ar',
-    "depends": ["product", "purchase", "sale"],
+    "depends": ['product', 'purchase', 'sale', 'point_of_sale'],
     "category": "Tools",
     "description": """
 Tablero de mando Nixel
@@ -40,7 +40,6 @@ Tablero de mando Nixel
     "init_xml": [],
     "demo_xml": [],
     "data": [
-
         "views/nixel_report.xml",
         "wizard/report_wizard_view.xml"
     ],
