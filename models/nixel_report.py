@@ -82,7 +82,7 @@ class nixel_report_def(report_sxw.rml_parse):
             # summarize
             for account in pool.browse(self.cr, self.uid, ids):
                 if account.name != 'Gestionar Cobranzas':
-                    if account.debit != 0.0:
+#                    if account.debit != 0.0:
 #                        print '...',account.debit, account.credit, account.date,' name ' ,account.name, \
 #                            account.narration, account.partner_id.name, account.journal_id.name
 
