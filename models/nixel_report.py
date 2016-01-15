@@ -65,7 +65,7 @@ class nixel_report_def(report_sxw.rml_parse):
         """
         Compute all invoices from sales or purchases
         """
-        print '>>> compute_invoices from ',journal_type, date_from, date_to
+#        print '>>> compute_invoices from ',journal_type, date_from, date_to
         # find journals of type journal_type
         journal_pool = self.pool['account.journal']
         journal_ids = journal_pool.search(self.cr, self.uid,
@@ -83,18 +83,18 @@ class nixel_report_def(report_sxw.rml_parse):
             for account in pool.browse(self.cr, self.uid, ids):
                 if account.name != 'Gestionar Cobranzas':
                     if account.debit != 0.0:
-                        print '...',account.debit, account.credit, account.date,' name ' ,account.name, \
-                            account.narration, account.partner_id.name, account.journal_id.name
+#                        print '...',account.debit, account.credit, account.date,' name ' ,account.name, \
+#                            account.narration, account.partner_id.name, account.journal_id.name
 
                     debit += account.debit
                     credit += account.credit
 
-        print 'total > ',debit
-        print '<<< compute_invoices'
+#        print 'total > ',debit
+#        print '<<< compute_invoices'
         return debit, credit
 
     def _compute_vouchers(self, date_from, date_to, voucher_type):
-        print '>>> compute vouchers from', voucher_type
+#        print '>>> compute vouchers from', voucher_type
         # find vouchers type voucher type
         voucher_pool = self.pool['account.voucher']
         voucher_ids = voucher_pool.search(self.cr, self.uid, [
@@ -104,11 +104,11 @@ class nixel_report_def(report_sxw.rml_parse):
         ])
         amount = 0.0
         for voucher in voucher_pool.browse(self.cr, self.uid, voucher_ids):
-            print '...',voucher.amount, voucher.name, voucher.partner_id.name
+#            print '...',voucher.amount, voucher.name, voucher.partner_id.name
             # summarize
             amount += voucher.amount
 
-        print '<<< compute vouchers'
+#        print '<<< compute vouchers'
         return amount
 
     def _compute_balance(self, cr, uid, account_id):
@@ -159,7 +159,7 @@ class nixel_report_def(report_sxw.rml_parse):
         """
         Computa todos los cobros del pos entre dos fechas
         """
-        print '>>> compute pos'
+#        print '>>> compute pos'
         date_from, date_to = self._period()
         # add a day to date_to
         dt = datetime.datetime.strptime(date_to,'%Y-%m-%d') + datetime.timedelta(days=1)
@@ -171,10 +171,10 @@ class nixel_report_def(report_sxw.rml_parse):
         ])
         amount = 0.0
         for pos in pos.browse(self.cr, self.uid, ids):
-            print '...................................',pos.amount_total, pos.date_order
+#            print '...................................',pos.amount_total, pos.date_order
             amount += pos.amount_total
-        print 'total >', amount
-        print '<<< compute pos'
+#        print 'total >', amount
+#        print '<<< compute pos'
         return amount
 
     def _get_debtors(self):
@@ -231,7 +231,7 @@ class nixel_report_def(report_sxw.rml_parse):
         # cobros de tickets
         amount += self._compute_pos()
 
-        print '=================== venta fac', invoiced, '  cob',amount
+#        print '=================== venta fac', invoiced, '  cob',amount
         return {'fac': invoiced,
                 'cob': amount,
                 'pen': invoiced - amount}
