@@ -23,7 +23,6 @@ import time
 from openerp.osv import osv
 from openerp.report import report_sxw
 
-
 class nixel_report_def(report_sxw.rml_parse):
     def __init__(self, cr, uid, name, context=None):
         super(nixel_report_def, self).__init__(cr, uid, name, context=context)
@@ -62,12 +61,13 @@ class nixel_report_def(report_sxw.rml_parse):
 
     def _compute_invoices(self, date_from, date_to, journal_type):
         """
-        Compute all invoices from sales and purchases
+        Compute all invoices from sales or purchases
         """
         # find journals of type journal_type
         journal_pool = self.pool['account.journal']
         journal_ids = journal_pool.search(self.cr, self.uid,
                                           [('type', '=', journal_type)])
+        debit = credit = 0.0
         for journal in journal_pool.browse(self.cr, self.uid, journal_ids):
             # find move lines of this journal, between dates
             pool = self.pool['account.move.line']
@@ -77,7 +77,6 @@ class nixel_report_def(report_sxw.rml_parse):
                 ('date', '<=', date_to),
             ])
             # summarize
-            debit = credit = 0.0
             for account in pool.browse(self.cr, self.uid, ids):
                 debit += account.debit
                 credit += account.credit
@@ -187,13 +186,25 @@ class nixel_report_def(report_sxw.rml_parse):
         return {'creditors': creditors, 'total': total}
 
     def _get_venta(self):
-        date_from, date_to = self._period()
-        # compute all sales
-        sale, dummy = self._compute_invoices(date_from, date_to, 'sale')
-        # compute all sales refund
-        refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
-        invoiced = sale - refund
+        """
+        Facturado:
+            suma todas las facturas del periodo
+            le resta todas las notas de crédito del periodo
+            le suma los movimientos del punto de venta del periodo.
 
+        Cobrado:
+            suma todos los vouchers del periodo
+            le suma los movimientos del punto de venta del periodo.
+        """
+        date_from, date_to = self._period()
+        invoiced = 0.0
+        # compute sales
+        sale, dummy = self._compute_invoices(date_from, date_to, 'sale')
+        invoiced += sale
+        # compute refunds
+        refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
+        invoiced -= refund
+        # compute pos
         amount_pos = self._compute_pos()
         invoiced += amount_pos
 
@@ -207,12 +218,22 @@ class nixel_report_def(report_sxw.rml_parse):
                 'pen': invoiced - amount}
 
     def _get_compra(self):
+        """
+        Facturado:
+            suma todas las facturas del periodo
+            le resta todas las notas de crédito del periodo
+
+        Cobrado:
+            suma todos los vouchers del periodo
+        """
         date_from, date_to = self._period()
+        invoiced = 0.0
         # compute all purchases
         purchase, dummy = self._compute_invoices(date_from, date_to, 'purchase')
+        invoiced += purchase
         # compute all purchase refunds
         refund, dummy = self._compute_invoices(date_from, date_to, 'purchase_refund')
-        invoiced = purchase - refund
+        invoiced -= refund
 
         amount = self._compute_vouchers(date_from, date_to, 'payment')
 
