@@ -19,6 +19,8 @@
 #
 ##############################################################################
 import time
+import datetime
+from datetime import timedelta
 
 from openerp.osv import osv
 from openerp.report import report_sxw
@@ -63,6 +65,7 @@ class nixel_report_def(report_sxw.rml_parse):
         """
         Compute all invoices from sales or purchases
         """
+        print '>>> compute_invoices from ',journal_type, date_from, date_to
         # find journals of type journal_type
         journal_pool = self.pool['account.journal']
         journal_ids = journal_pool.search(self.cr, self.uid,
@@ -78,12 +81,20 @@ class nixel_report_def(report_sxw.rml_parse):
             ])
             # summarize
             for account in pool.browse(self.cr, self.uid, ids):
-                debit += account.debit
-                credit += account.credit
+                if account.name != 'Gestionar Cobranzas':
+                    if account.debit != 0.0:
+                        print '...',account.debit, account.credit, account.date,' name ' ,account.name, \
+                            account.narration, account.partner_id.name, account.journal_id.name
 
+                    debit += account.debit
+                    credit += account.credit
+
+        print 'total > ',debit
+        print '<<< compute_invoices'
         return debit, credit
 
     def _compute_vouchers(self, date_from, date_to, voucher_type):
+        print '>>> compute vouchers from', voucher_type
         # find vouchers type voucher type
         voucher_pool = self.pool['account.voucher']
         voucher_ids = voucher_pool.search(self.cr, self.uid, [
@@ -93,9 +104,11 @@ class nixel_report_def(report_sxw.rml_parse):
         ])
         amount = 0.0
         for voucher in voucher_pool.browse(self.cr, self.uid, voucher_ids):
+            print '...',voucher.amount, voucher.name, voucher.partner_id.name
             # summarize
             amount += voucher.amount
 
+        print '<<< compute vouchers'
         return amount
 
     def _compute_balance(self, cr, uid, account_id):
@@ -146,15 +159,22 @@ class nixel_report_def(report_sxw.rml_parse):
         """
         Computa todos los cobros del pos entre dos fechas
         """
+        print '>>> compute pos'
         date_from, date_to = self._period()
+        # add a day to date_to
+        dt = datetime.datetime.strptime(date_to,'%Y-%m-%d') + datetime.timedelta(days=1)
+        date_to = dt.strftime('%Y-%m-%d')
         pos = self.pool['pos.order']
         ids = pos.search(self.cr, self.uid, [
-            ('date_order', '>=', date_from),
-            ('date_order', '<=', date_to),
+            ('date_order', '>=', date_from+' 03:00:00'),
+            ('date_order', '<=', date_to+' 03:00:00'),
         ])
         amount = 0.0
         for pos in pos.browse(self.cr, self.uid, ids):
+            print '...................................',pos.amount_total, pos.date_order
             amount += pos.amount_total
+        print 'total >', amount
+        print '<<< compute pos'
         return amount
 
     def _get_debtors(self):
@@ -188,9 +208,9 @@ class nixel_report_def(report_sxw.rml_parse):
     def _get_venta(self):
         """
         Facturado:
-            suma todas las facturas del periodo
+            suma todas las facturas del periodo de facturacion (no pos)
             le resta todas las notas de crédito del periodo
-            le suma los movimientos del punto de venta del periodo.
+            le suma los movimientos del pos
 
         Cobrado:
             suma todos los vouchers del periodo
@@ -204,15 +224,14 @@ class nixel_report_def(report_sxw.rml_parse):
         # compute refunds
         refund, dummy = self._compute_invoices(date_from, date_to, 'sale_refund')
         invoiced -= refund
-        # compute pos
-        amount_pos = self._compute_pos()
-        invoiced += amount_pos
+        invoiced += self._compute_pos()
 
         # cobros de facturas
         amount = self._compute_vouchers(date_from, date_to, 'receipt')
         # cobros de tickets
-        amount += amount_pos
+        amount += self._compute_pos()
 
+        print '=================== venta fac', invoiced, '  cob',amount
         return {'fac': invoiced,
                 'cob': amount,
                 'pen': invoiced - amount}
