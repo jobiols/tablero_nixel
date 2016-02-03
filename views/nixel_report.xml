@@ -52,12 +52,21 @@
 					</tr>
 					<tr>
 						<td>
-							Cobrado
+							Cobrado neto de retenciones
 						</td>
 						<td style="align right">
 							<span t-esc="formatLang(get_venta()['cob'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
+					<tr>
+						<td>
+							Cobrado con retenciones
+						</td>
+						<td style="align right">
+							<span t-esc="formatLang(get_venta()['ret'], currency_obj=res_company.currency_id)" />
+						</td>
+					</tr>
+
 					<tr>
 						<td>
 							Pendiente
@@ -80,10 +89,18 @@
 					</tr>
 					<tr>
 						<td>
-							Cobrado
+							Pagado neto de retenciones
 						</td>
 						<td style="align right">
 							<span t-esc="formatLang(get_compra()['cob'], currency_obj=res_company.currency_id)" />
+						</td>
+					</tr>
+					<tr>
+						<td>
+							Pagado con retenciones
+						</td>
+						<td style="align right">
+							<span t-esc="formatLang(get_compra()['ret'], currency_obj=res_company.currency_id)" />
 						</td>
 					</tr>
 					<tr>

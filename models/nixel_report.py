@@ -49,7 +49,10 @@ class nixel_report_def(report_sxw.rml_parse):
             pay_account = pp.property_account_payable.id
         return {'property_account_receivable': rec_account,
                 'property_account_payable': pay_account,
-                'expenses': 155
+                'expenses': 155,
+                'RG':15,
+                'RIB':29,
+                'RIVA':20,
                 }
 
     def _period(self):
@@ -60,6 +63,32 @@ class nixel_report_def(report_sxw.rml_parse):
             date_from = data.desde_date
             date_to = data.hasta_date
         return date_from, date_to
+
+    def _compute_withholdings(self,  date_from, date_to):
+        """
+        Calcula las retenciones en el periodo, devolviendo creditos y debitos en
+        un diccionario, los créditos corresponden a las compras y los debitos a las ventas
+        """
+        debit = credit = 0
+        account_id = self._default_accounts()['RG']
+        result = self._summarize_account(self.cr, self.uid, account_id, date_from, date_to)
+        debit += result['debit']
+        credit += result['credit']
+#        print 'RG', result
+
+        account_id = self._default_accounts()['RIVA']
+        result = self._summarize_account(self.cr, self.uid, account_id, date_from, date_to)
+        debit += result['debit']
+        credit += result['credit']
+#        print 'RIVA', result
+
+        account_id = self._default_accounts()['RIB']
+        result = self._summarize_account(self.cr, self.uid, account_id, date_from, date_to)
+        debit += result['debit']
+        credit += result['credit']
+#        print 'RIB', result
+
+        return {'debit':debit, 'credit': credit}
 
     def _compute_invoices(self, date_from, date_to, journal_type):
         """
@@ -212,12 +241,19 @@ class nixel_report_def(report_sxw.rml_parse):
             le resta todas las notas de crédito del periodo
             le suma los movimientos del pos
 
-        Cobrado:
+        Cobrado neto de retenciones:
             suma todos los vouchers del periodo
             le suma los movimientos del punto de venta del periodo.
+            le resta las retenciones
+
+        Retenciones:
+            las retenciones
         """
+
         date_from, date_to = self._period()
         invoiced = 0.0
+        withholdings = self._compute_withholdings(date_from, date_to)['debit']
+
         # compute sales
         sale, dummy = self._compute_invoices(date_from, date_to, 'sale')
         invoiced += sale
@@ -230,11 +266,13 @@ class nixel_report_def(report_sxw.rml_parse):
         amount = self._compute_vouchers(date_from, date_to, 'receipt')
         # cobros de tickets
         amount += self._compute_pos()
+        amount -= withholdings
 
 #        print '=================== venta fac', invoiced, '  cob',amount
         return {'fac': invoiced,
                 'cob': amount,
-                'pen': invoiced - amount}
+                'ret': withholdings,
+                'pen': invoiced - amount - withholdings}
 
     def _get_compra(self):
         """
@@ -242,11 +280,17 @@ class nixel_report_def(report_sxw.rml_parse):
             suma todas las facturas del periodo
             le resta todas las notas de crédito del periodo
 
-        Cobrado:
+        Pagado neto de retenciones:
             suma todos los vouchers del periodo
+            resta las retenciones
+
+        Retenciones
+            las retenciones
         """
         date_from, date_to = self._period()
         invoiced = 0.0
+        withholdings = self._compute_withholdings(date_from, date_to)['credit']
+
         # compute all purchases
         purchase, dummy = self._compute_invoices(date_from, date_to, 'purchase')
         invoiced += purchase
@@ -255,10 +299,11 @@ class nixel_report_def(report_sxw.rml_parse):
         invoiced -= refund
 
         amount = self._compute_vouchers(date_from, date_to, 'payment')
-
+        amount -=withholdings
         return {'fac': invoiced,
                 'cob': amount,
-                'pen': invoiced - amount}
+                'ret': withholdings,
+                'pen': invoiced - amount - withholdings}
 
     def _get_gastos(self):
         date_from, date_to = self._period()
